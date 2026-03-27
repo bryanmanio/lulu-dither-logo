@@ -547,10 +547,6 @@ input[type="color"]::-webkit-color-swatch {
           </div>
           <input type="range" id="ctrl-3d-rotatespeed" min="-30" max="30" value="10">
 
-          <div class="check-row">
-            <input type="checkbox" id="ctrl-3d-wireframe">
-            <label for="ctrl-3d-wireframe">Wireframe</label>
-          </div>
         </div>
 
       </div><!-- /threed-controls -->
@@ -965,14 +961,7 @@ function updatePop() {
 }
 
 function update() {
-  if (appMode === '3d') {
-    // Canvas press spring still runs for the 3D canvas
-    canvasScaleV += (canvasScaleTgt - canvasScale) * 0.22;
-    canvasScaleV *= 0.68;
-    canvasScale  += canvasScaleV;
-    if (window._3d) window._3d.setScale(canvasScale);
-    return;
-  }
+  if (appMode === '3d') return;
   if (falling) {
     FALL.mode === 'pop' ? updatePop() : updateFall();
     return;
@@ -1252,12 +1241,7 @@ function initControls() {
   document.getElementById('ctrl-3d-key-color').addEventListener('input', e => window._3d?.set('keyColor', e.target.value));
   document.getElementById('ctrl-3d-bg').addEventListener('input', e => window._3d?.set('bgColor', e.target.value));
   document.getElementById('ctrl-3d-autorotate').addEventListener('change', e => window._3d?.set('autoRotate', e.target.checked));
-  document.getElementById('ctrl-3d-wireframe').addEventListener('change', e => window._3d?.set('wireframe', e.target.checked));
 
-  // 3D canvas press spring (mousedown on the 3D canvas area)
-  document.getElementById('canvas-3d-wrap').addEventListener('mousedown', () => {
-    canvasScale = 0.95; canvasScaleV = 0; canvasScaleTgt = 0.95;
-  });
 
   // Wave grid sliders
   const wgBind = (id, key, parseFn, dispId, dispFn) => {
