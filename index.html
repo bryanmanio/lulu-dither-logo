@@ -537,15 +537,15 @@ input[type="color"]::-webkit-color-swatch {
 
         <div class="section">
           <div class="check-row" id="threed-autorotate-row">
-            <input type="checkbox" id="ctrl-3d-autorotate">
+            <input type="checkbox" id="ctrl-3d-autorotate" checked>
             <label for="ctrl-3d-autorotate">Auto-Rotate</label>
           </div>
 
           <div class="row">
             <span class="label">Rotate Speed</span>
-            <span class="val" id="disp-3d-rotatespeed">1.0</span>
+            <span class="val" id="disp-3d-rotatespeed">2.2</span>
           </div>
-          <input type="range" id="ctrl-3d-rotatespeed" min="-30" max="30" value="10">
+          <input type="range" id="ctrl-3d-rotatespeed" min="-30" max="30" value="22">
 
         </div>
 
@@ -1391,8 +1391,8 @@ const cfg = {
   bgColor:          '#0a0a0a',
   modelScale:       1.0,
   wireframe:        false,
-  autoRotate:       false,
-  rotateSpeed:      1.0,
+  autoRotate:       true,
+  rotateSpeed:      2.2,
   roughness:        null,
   metalness:        null,
 };
