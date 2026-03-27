@@ -319,6 +319,7 @@ input[type="color"]::-webkit-color-swatch {
   <!-- Left: canvas -->
   <div id="canvas-panel">
     <canvas id="canvas"></canvas>
+    <div id="canvas-3d-wrap" style="display:none;position:relative"></div>
     <div id="dot-count">— dots</div>
   </div>
 
@@ -331,6 +332,7 @@ input[type="color"]::-webkit-color-swatch {
         <div class="seg" id="app-mode-seg">
           <button class="seg-btn seg-active" data-mode="dither">Dither</button>
           <button class="seg-btn" data-mode="wave">Wave Grid</button>
+          <button class="seg-btn" data-mode="3d">3D</button>
         </div>
       </div>
 
@@ -466,6 +468,93 @@ input[type="color"]::-webkit-color-swatch {
 
       </div><!-- /dither-controls -->
 
+      <!-- 3D controls -->
+      <div id="threed-controls" style="display:none">
+
+        <div class="section">
+          <div class="row">
+            <span class="label">Ambient Light</span>
+            <span class="val" id="disp-3d-ambient">3.0</span>
+          </div>
+          <input type="range" id="ctrl-3d-ambient" min="0" max="40" value="30">
+
+          <div class="row">
+            <span class="label">Key Light</span>
+            <span class="val" id="disp-3d-key">6.0</span>
+          </div>
+          <input type="range" id="ctrl-3d-key" min="0" max="80" value="60">
+
+          <div class="color-row">
+            <span class="label">Key Light Color</span>
+            <input type="color" id="ctrl-3d-key-color" value="#ffffff">
+          </div>
+
+          <div class="row">
+            <span class="label">Fill Light</span>
+            <span class="val" id="disp-3d-fill">2.0</span>
+          </div>
+          <input type="range" id="ctrl-3d-fill" min="0" max="40" value="20">
+        </div>
+
+        <div class="section">
+          <div class="row">
+            <span class="label">Exposure</span>
+            <span class="val" id="disp-3d-exposure">1.8</span>
+          </div>
+          <input type="range" id="ctrl-3d-exposure" min="5" max="40" value="18">
+
+          <div class="row">
+            <span class="label">Camera FOV</span>
+            <span class="val" id="disp-3d-fov">45°</span>
+          </div>
+          <input type="range" id="ctrl-3d-fov" min="10" max="90" value="45">
+
+          <div class="color-row">
+            <span class="label">Background</span>
+            <input type="color" id="ctrl-3d-bg" value="#0a0a0a">
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="row">
+            <span class="label">Scale</span>
+            <span class="val" id="disp-3d-scale">1.0×</span>
+          </div>
+          <input type="range" id="ctrl-3d-scale" min="5" max="30" value="10">
+
+          <div class="row">
+            <span class="label">Roughness</span>
+            <span class="val" id="disp-3d-roughness">—</span>
+          </div>
+          <input type="range" id="ctrl-3d-roughness" min="0" max="100" value="50">
+
+          <div class="row">
+            <span class="label">Metalness</span>
+            <span class="val" id="disp-3d-metalness">—</span>
+          </div>
+          <input type="range" id="ctrl-3d-metalness" min="0" max="100" value="0">
+        </div>
+
+        <div class="section">
+          <div class="check-row" id="threed-autorotate-row">
+            <input type="checkbox" id="ctrl-3d-autorotate">
+            <label for="ctrl-3d-autorotate">Auto-Rotate</label>
+          </div>
+
+          <div class="row">
+            <span class="label">Rotate Speed</span>
+            <span class="val" id="disp-3d-rotatespeed">1.0</span>
+          </div>
+          <input type="range" id="ctrl-3d-rotatespeed" min="-30" max="30" value="10">
+
+          <div class="check-row">
+            <input type="checkbox" id="ctrl-3d-wireframe">
+            <label for="ctrl-3d-wireframe">Wireframe</label>
+          </div>
+        </div>
+
+      </div><!-- /threed-controls -->
+
     </div><!-- /controls-scroll -->
 
     <div id="export-bar">
@@ -518,7 +607,7 @@ const S = {
   pillAngle: 0,       // pill rotation in degrees
 };
 
-let appMode = 'dither'; // 'dither' | 'wave'
+let appMode = 'dither'; // 'dither' | 'wave' | '3d'
 
 // Canvas press spring
 let canvasScale   = 1;
@@ -876,6 +965,14 @@ function updatePop() {
 }
 
 function update() {
+  if (appMode === '3d') {
+    // Canvas press spring still runs for the 3D canvas
+    canvasScaleV += (canvasScaleTgt - canvasScale) * 0.22;
+    canvasScaleV *= 0.68;
+    canvasScale  += canvasScaleV;
+    if (window._3d) window._3d.setScale(canvasScale);
+    return;
+  }
   if (falling) {
     FALL.mode === 'pop' ? updatePop() : updateFall();
     return;
@@ -956,6 +1053,8 @@ function drawWaveGrid() {
 }
 
 function draw() {
+  if (appMode === '3d') return; // Three.js handles its own render loop
+
   // Background
   ctx.fillStyle = S.bgColor;
   ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
@@ -1045,6 +1144,7 @@ function resizeCanvas() {
   canvas.height = CANVAS_SIZE;
   canvas.style.width  = CANVAS_SIZE + 'px';
   canvas.style.height = CANVAS_SIZE + 'px';
+  if (window._3d) window._3d.resize(CANVAS_SIZE);
   scheduleRegen(20);
 }
 
@@ -1100,11 +1200,63 @@ function initControls() {
   document.getElementById('app-mode-seg').addEventListener('click', e => {
     const btn = e.target.closest('.seg-btn');
     if (!btn) return;
+    const prev = appMode;
     appMode = btn.dataset.mode;
     document.querySelectorAll('#app-mode-seg .seg-btn').forEach(b =>
       b.classList.toggle('seg-active', b === btn));
-    document.getElementById('wave-controls').style.display   = appMode === 'wave'   ? 'block' : 'none';
-    document.getElementById('dither-controls').style.display = appMode === 'dither' ? 'block' : 'none';
+    document.getElementById('wave-controls').style.display    = appMode === 'wave'   ? 'block' : 'none';
+    document.getElementById('dither-controls').style.display  = appMode === 'dither' ? 'block' : 'none';
+    document.getElementById('threed-controls').style.display  = appMode === '3d'     ? 'block' : 'none';
+    document.getElementById('canvas').style.display           = appMode === '3d'     ? 'none'  : 'block';
+    document.getElementById('canvas-3d-wrap').style.display   = appMode === '3d'     ? 'block' : 'none';
+    document.getElementById('dot-count').style.display        = appMode === '3d'     ? 'none'  : 'block';
+    if (appMode === '3d') {
+      if (!window._3d || !window._3d.initialized) {
+        // Lazy-init Three.js scene (module may still be loading)
+        const tryInit = () => {
+          if (window._3dInit) {
+            window._3dInit(document.getElementById('canvas-3d-wrap'), CANVAS_SIZE);
+          } else {
+            setTimeout(tryInit, 50);
+          }
+        };
+        tryInit();
+      } else {
+        window._3d.resize(CANVAS_SIZE);
+        window._3d.start();
+      }
+    } else if (prev === '3d' && window._3d) {
+      window._3d.stop();
+    }
+  });
+
+  // 3D sliders & toggles
+  function bind3d(id, dispId, min, max, fmt, onInput) {
+    const el = document.getElementById(id);
+    const disp = dispId ? document.getElementById(dispId) : null;
+    el.addEventListener('input', () => {
+      const v = parseFloat(el.value);
+      if (disp) disp.textContent = fmt(v);
+      onInput(v);
+    });
+  }
+  bind3d('ctrl-3d-ambient',  'disp-3d-ambient',  0, 40,  v => (v/10).toFixed(1), v => window._3d?.set('ambientIntensity', v/10));
+  bind3d('ctrl-3d-key',      'disp-3d-key',      0, 80,  v => (v/10).toFixed(1), v => window._3d?.set('keyIntensity', v/10));
+  bind3d('ctrl-3d-fill',     'disp-3d-fill',     0, 40,  v => (v/10).toFixed(1), v => window._3d?.set('fillIntensity', v/10));
+  bind3d('ctrl-3d-exposure', 'disp-3d-exposure', 5, 40,  v => (v/10).toFixed(1), v => window._3d?.set('exposure', v/10));
+  bind3d('ctrl-3d-fov',      'disp-3d-fov',      10, 90, v => v + '°',           v => window._3d?.set('fov', v));
+  bind3d('ctrl-3d-scale',    'disp-3d-scale',    5, 30,  v => (v/10).toFixed(1) + '×', v => window._3d?.set('modelScale', v/10));
+  bind3d('ctrl-3d-roughness','disp-3d-roughness',0,100,  v => (v/100).toFixed(2), v => window._3d?.set('roughness', v/100));
+  bind3d('ctrl-3d-metalness','disp-3d-metalness',0,100,  v => (v/100).toFixed(2), v => window._3d?.set('metalness', v/100));
+  bind3d('ctrl-3d-rotatespeed','disp-3d-rotatespeed',-30,30, v => (v/10).toFixed(1), v => window._3d?.set('rotateSpeed', v/10));
+  document.getElementById('ctrl-3d-key-color').addEventListener('input', e => window._3d?.set('keyColor', e.target.value));
+  document.getElementById('ctrl-3d-bg').addEventListener('input', e => window._3d?.set('bgColor', e.target.value));
+  document.getElementById('ctrl-3d-autorotate').addEventListener('change', e => window._3d?.set('autoRotate', e.target.checked));
+  document.getElementById('ctrl-3d-wireframe').addEventListener('change', e => window._3d?.set('wireframe', e.target.checked));
+
+  // 3D canvas press spring (mousedown on the 3D canvas area)
+  document.getElementById('canvas-3d-wrap').addEventListener('mousedown', () => {
+    canvasScale = 0.95; canvasScaleV = 0; canvasScaleTgt = 0.95;
   });
 
   // Wave grid sliders
@@ -1224,6 +1376,194 @@ initControls();
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 loop();
+</script>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader }    from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+let renderer, scene, camera, orbitControls, model;
+let meshes = [];
+let animId = null;
+let running = false;
+
+const cfg = {
+  ambientIntensity: 3.0,
+  keyIntensity:     6.0,
+  keyColor:         '#ffffff',
+  fillIntensity:    2.0,
+  fov:              45,
+  exposure:         1.8,
+  bgColor:          '#0a0a0a',
+  modelScale:       1.0,
+  wireframe:        false,
+  autoRotate:       false,
+  rotateSpeed:      1.0,
+  roughness:        null,
+  metalness:        null,
+};
+
+let ambientLight, keyLight, fillLight;
+
+function init(container, size) {
+  // Renderer
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(size, size);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type    = THREE.PCFSoftShadowMap;
+  renderer.toneMapping       = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = cfg.exposure;
+  renderer.outputColorSpace  = THREE.SRGBColorSpace;
+
+  // Style the renderer canvas to match the 2D canvas
+  renderer.domElement.style.borderRadius = '4px';
+  renderer.domElement.style.display = 'block';
+  container.appendChild(renderer.domElement);
+
+  // Scene
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(cfg.bgColor);
+
+  // Camera
+  camera = new THREE.PerspectiveCamera(cfg.fov, 1, 0.01, 10000);
+  camera.position.set(0, 0, 200);
+
+  // Lights
+  ambientLight = new THREE.AmbientLight(0xffffff, cfg.ambientIntensity);
+  scene.add(ambientLight);
+
+  keyLight = new THREE.DirectionalLight(new THREE.Color(cfg.keyColor), cfg.keyIntensity);
+  keyLight.position.set(5, 8, 7);
+  keyLight.castShadow = true;
+  keyLight.shadow.mapSize.set(2048, 2048);
+  scene.add(keyLight);
+
+  fillLight = new THREE.DirectionalLight(0x8899cc, cfg.fillIntensity);
+  fillLight.position.set(-4, -2, 4);
+  scene.add(fillLight);
+
+  // Orbit controls
+  orbitControls = new OrbitControls(camera, renderer.domElement);
+  orbitControls.enableDamping    = true;
+  orbitControls.dampingFactor    = 0.06;
+  orbitControls.autoRotate       = cfg.autoRotate;
+  orbitControls.autoRotateSpeed  = cfg.rotateSpeed;
+
+  // Load GLTF
+  const loader = new GLTFLoader();
+  loader.load('./model.gltf', gltf => {
+    model = gltf.scene;
+
+    // Centre & fit
+    const box    = new THREE.Box3().setFromObject(model);
+    const center = box.getCenter(new THREE.Vector3());
+    const dims   = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(dims.x, dims.y, dims.z);
+
+    model.position.sub(center);
+
+    const fitDist = (maxDim / 2) / Math.tan((cfg.fov * Math.PI / 180) / 2);
+    camera.position.set(0, 0, fitDist * 1.5);
+    orbitControls.target.set(0, 0, 0);
+    orbitControls.update();
+
+    model.traverse(child => {
+      if (child.isMesh) {
+        meshes.push(child);
+        child.castShadow    = true;
+        child.receiveShadow = true;
+      }
+    });
+
+    scene.add(model);
+  }, undefined, err => console.error('GLTF load error', err));
+
+  start();
+}
+
+function start() {
+  if (running) return;
+  running = true;
+  animate();
+}
+
+function stop() {
+  running = false;
+  if (animId) { cancelAnimationFrame(animId); animId = null; }
+}
+
+function animate() {
+  if (!running) return;
+  animId = requestAnimationFrame(animate);
+  orbitControls.update();
+  if (renderer && scene && camera) renderer.render(scene, camera);
+}
+
+function resize(size) {
+  if (!renderer) return;
+  renderer.setSize(size, size);
+  if (camera) { camera.aspect = 1; camera.updateProjectionMatrix(); }
+  // Also size the container
+  const wrap = document.getElementById('canvas-3d-wrap');
+  if (wrap) { wrap.style.width = size + 'px'; wrap.style.height = size + 'px'; }
+}
+
+function setScale(s) {
+  if (renderer && renderer.domElement) {
+    renderer.domElement.style.transform = `scale(${s})`;
+    renderer.domElement.style.transformOrigin = 'center center';
+  }
+}
+
+function set(key, val) {
+  cfg[key] = val;
+  if (!renderer) return;
+  switch (key) {
+    case 'ambientIntensity': if (ambientLight) ambientLight.intensity = val; break;
+    case 'keyIntensity':     if (keyLight)     keyLight.intensity     = val; break;
+    case 'keyColor':         if (keyLight)     keyLight.color.set(val);     break;
+    case 'fillIntensity':    if (fillLight)    fillLight.intensity    = val; break;
+    case 'fov':
+      if (camera) { camera.fov = val; camera.updateProjectionMatrix(); } break;
+    case 'exposure':
+      if (renderer) renderer.toneMappingExposure = val; break;
+    case 'bgColor':
+      if (scene) scene.background = new THREE.Color(val); break;
+    case 'modelScale':
+      if (model) model.scale.setScalar(val); break;
+    case 'wireframe':
+      meshes.forEach(m => { if (m.material) m.material.wireframe = val; }); break;
+    case 'autoRotate':
+      if (orbitControls) orbitControls.autoRotate = val; break;
+    case 'rotateSpeed':
+      if (orbitControls) orbitControls.autoRotateSpeed = val; break;
+    case 'roughness':
+      meshes.forEach(m => { if (m.material?.roughness !== undefined) m.material.roughness = val; }); break;
+    case 'metalness':
+      meshes.forEach(m => { if (m.material?.metalness !== undefined) m.material.metalness = val; }); break;
+  }
+}
+
+// Expose to main script — initialized flag starts false
+window._3d = { init, start, stop, resize, set, setScale, initialized: false };
+
+// _3dInit is the hook the mode toggle calls on first switch to 3D
+window._3dInit = (container, size) => {
+  if (window._3d.initialized) return;
+  window._3d.initialized = true;
+  init(container, size);
+};
 </script>
 </body>
 </html>
