@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dither Logo</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0d0d0d;
+  color: #e0e0e0;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+  font-size: 13px;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+}
+
+#app {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* ── Canvas panel ─────────────────────────────── */
+#canvas-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: #0d0d0d;
+  min-width: 0;
+}
+
+#canvas {
+  cursor: none;
+  display: block;
+  border-radius: 4px;
+}
+
+#dot-count {
+  color: #444;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+}
+
+/* ── Controls panel ───────────────────────────── */
+#controls-panel {
+  width: 288px;
+  flex-shrink: 0;
+  background: #111114;
+  border-left: 1px solid #1e1e22;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+#controls-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
+
+#controls-scroll::-webkit-scrollbar { width: 4px; }
+#controls-scroll::-webkit-scrollbar-track { background: transparent; }
+#controls-scroll::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
+
+.section {
+  padding: 14px 16px;
+  border-bottom: 1px solid #1a1a1e;
+}
+
+.section-title {
+  font-size: 10px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.section-title::before {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #4a7fa5;
+  flex-shrink: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.label {
+  color: #aaa;
+  font-size: 12px;
+}
+
+.val {
+  color: #666;
+  font-size: 11px;
+  min-width: 44px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sliders */
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 2px;
+  background: #252528;
+  border-radius: 2px;
+  outline: none;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  background: #4a7fa5;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* Select */
+select {
+  background: transparent;
+  border: none;
+  color: #4a7fa5;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  padding: 0;
+  margin-bottom: 10px;
+}
+
+select option {
+  background: #1a1a1e;
+  color: #e0e0e0;
+}
+
+/* Checkbox rows */
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.check-row input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: #4a7fa5;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.check-row label {
+  color: #aaa;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* Color inputs */
+.color-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+input[type="color"] {
+  -webkit-appearance: none;
+  width: 28px;
+  height: 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background: none;
+  padding: 0;
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+input[type="color"]::-webkit-color-swatch {
+  border: 1px solid #333;
+  border-radius: 4px;
+}
+
+.hint {
+  color: #484848;
+  font-size: 11px;
+  line-height: 1.6;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+/* Error strength header with inline value */
+.strength-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.strength-title {
+  font-size: 10px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.strength-title::before {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #4a7fa5;
+  flex-shrink: 0;
+}
+
+/* Export bar */
+#export-bar {
+  padding: 12px 16px;
+  border-top: 1px solid #1e1e22;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.export-row {
+  display: flex;
+  gap: 8px;
+}
+
+.btn {
+  flex: 1;
+  padding: 10px 8px;
+  border: none;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  letter-spacing: 0.01em;
+}
+
+.btn:hover { opacity: 0.88; }
+.btn:active { transform: scale(0.97); opacity: 0.75; }
+
+.btn-primary { background: #4a7fa5; color: #fff; }
+.btn-secondary { background: #1e1e22; color: #c0c0c0; }
+.btn-fall { background: #1e1e22; color: #c0c0c0; width: 100%; }
+
+/* Segmented mode control */
+.seg {
+  display: flex;
+  background: #1a1a1e;
+  border-radius: 8px;
+  padding: 3px;
+  gap: 3px;
+  margin-bottom: 14px;
+}
+
+.seg-btn {
+  flex: 1;
+  padding: 6px 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #666;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.seg-btn:hover { color: #aaa; }
+
+.seg-btn.seg-active {
+  background: #2e2e36;
+  color: #e0e0e0;
+}
+
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- Left: canvas -->
+  <div id="canvas-panel">
+    <canvas id="canvas"></canvas>
+    <div id="dot-count">— dots</div>
+  </div>
+
+  <!-- Right: controls -->
+  <div id="controls-panel">
+    <div id="controls-scroll">
+
+      <!-- Mode toggle -->
+      <div class="section" style="padding-bottom:8px">
+        <div class="seg" id="app-mode-seg">
+          <button class="seg-btn seg-active" data-mode="dither">Dither</button>
+          <button class="seg-btn" data-mode="wave">Wave Grid</button>
+        </div>
+      </div>
+
+      <!-- Wave grid controls -->
+      <div id="wave-controls" style="display:none">
+        <div class="section">
+          <div class="row">
+            <span class="label">Rows</span>
+            <span class="val" id="disp-wg-rows">21</span>
+          </div>
+          <input type="range" id="ctrl-wg-rows" min="1" max="24" value="21">
+
+          <div class="row">
+            <span class="label">Columns</span>
+            <span class="val" id="disp-wg-cols">2</span>
+          </div>
+          <input type="range" id="ctrl-wg-cols" min="2" max="40" value="2">
+
+          <div class="row">
+            <span class="label">Frequency</span>
+            <span class="val" id="disp-wg-freq">2.7</span>
+          </div>
+          <input type="range" id="ctrl-wg-freq" min="1" max="80" value="27">
+
+          <div class="row">
+            <span class="label">Phase Shift</span>
+            <span class="val" id="disp-wg-phase">0.40</span>
+          </div>
+          <input type="range" id="ctrl-wg-phase" min="0" max="100" value="40">
+
+          <div class="row">
+            <span class="label">Min Opacity</span>
+            <span class="val" id="disp-wg-minop">32%</span>
+          </div>
+          <input type="range" id="ctrl-wg-minop" min="0" max="100" value="32">
+
+          <div class="row">
+            <span class="label">Max Opacity</span>
+            <span class="val" id="disp-wg-maxop">100%</span>
+          </div>
+          <input type="range" id="ctrl-wg-maxop" min="0" max="100" value="100">
+
+          <div class="row">
+            <span class="label">Speed</span>
+            <span class="val" id="disp-wg-speed">0.9</span>
+          </div>
+          <input type="range" id="ctrl-wg-speed" min="0" max="100" value="30">
+        </div>
+      </div>
+
+      <!-- Dither controls -->
+      <div id="dither-controls">
+
+      <!-- Main settings -->
+      <div class="section">
+
+        <div class="row">
+          <span class="label">Scale</span>
+          <span class="val" id="disp-scale">64%</span>
+        </div>
+        <input type="range" id="ctrl-scale" min="20" max="100" value="64">
+
+      </div>
+
+
+      <!-- Interaction -->
+      <div class="section">
+
+        <div class="row">
+          <span class="label">Repulsion Radius</span>
+          <span class="val" id="disp-repulsion-radius">140px</span>
+        </div>
+        <input type="range" id="ctrl-repulsion-radius" min="10" max="200" value="140">
+
+        <div class="row">
+          <span class="label">Repulsion Strength</span>
+          <span class="val" id="disp-repulsion-strength">1.5</span>
+        </div>
+        <input type="range" id="ctrl-repulsion-strength" min="1" max="50" value="15">
+
+        <div class="row">
+          <span class="label">Return Speed</span>
+          <span class="val" id="disp-return-speed">0.04</span>
+        </div>
+        <input type="range" id="ctrl-return-speed" min="0" max="60" value="4">
+      </div>
+
+      <!-- Display -->
+      <div class="section">
+        <div class="color-row">
+          <span class="label">Dot Color</span>
+          <input type="color" id="ctrl-dot-color" value="#ffffff">
+        </div>
+        <div class="color-row">
+          <span class="label">Background Color</span>
+          <input type="color" id="ctrl-bg-color" value="#0a0a0a">
+        </div>
+        <div style="height:4px"></div>
+
+        <div class="row">
+          <span class="label">Dot Size</span>
+          <span class="val" id="disp-dot-size">42%</span>
+        </div>
+        <input type="range" id="ctrl-dot-size" min="10" max="80" value="42">
+
+
+
+        <div class="row" style="margin-bottom:6px">
+          <span class="label">Dot Shape</span>
+          <select id="ctrl-dot-shape" style="margin-bottom:0">
+            <option value="circle">Circle</option>
+            <option value="pill">Pill / Capsule</option>
+          </select>
+        </div>
+
+        <div id="pill-controls" style="display:none">
+          <div class="row">
+            <span class="label">Pill Aspect</span>
+            <span class="val" id="disp-pill-aspect">2.0×</span>
+          </div>
+          <input type="range" id="ctrl-pill-aspect" min="10" max="50" value="20">
+
+          <div class="row">
+            <span class="label">Pill Angle</span>
+            <span class="val" id="disp-pill-angle">0°</span>
+          </div>
+          <input type="range" id="ctrl-pill-angle" min="0" max="180" value="0">
+        </div>
+
+      </div>
+
+
+
+      </div><!-- /dither-controls -->
+
+    </div><!-- /controls-scroll -->
+
+    <div id="export-bar">
+      <div class="export-row">
+        <button class="btn btn-primary" id="btn-export">Export JSON</button>
+        <button class="btn btn-secondary" id="btn-copy">Copy JS Code</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────
+//  SVG SOURCE  (loaded from yogo.svg)
+// ─────────────────────────────────────────────────────────────────
+let SVG_SRC = null;
+
+async function fetchSvg() {
+  if (SVG_SRC) return;
+  const res = await fetch('./yogo.svg');
+  SVG_SRC = await res.text();
+  svgImg = null; // reset cached image so loadSvg() re-creates it
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────────────────────────
+const S = {
+  algorithm: 'threshold',
+  threshold: 101,
+  invert: true,
+  scale: 64,
+  contrast: 100,
+  gamma: 1.0,
+  highlights: 0,
+  blur: 0,
+  errorStrength: 1.0,
+  serpentine: true,
+  repulsionRadius: 140,
+  repulsionStrength: 1.5,
+  returnSpeed: 0.04,
+  dotColor: '#ffffff',
+  bgColor: '#0a0a0a',
+  showCursor: false,
+  cornerRadius: 20,
+  dotSizeScale: 42,   // dot radius as % of cellSize
+  dotBlur: 0,         // gaussian blur in px applied to dots
+  dotShape: 'circle', // 'circle' | 'pill'
+  pillAspect: 2.0,    // pill width multiplier
+  pillAngle: 0,       // pill rotation in degrees
+};
+
+let appMode = 'dither'; // 'dither' | 'wave'
+let wgTime  = 0;
+
+const WG = {
+  rows:       21,
+  cols:       2,
+  frequency:  2.7,
+  phaseShift: 0.40,
+  minOpacity: 0.32,
+  maxOpacity: 1.0,
+  speed:      0.9,
+};
+
+const FALL = {
+  mode:     'fall',
+  curve:    'easeOutQuart',
+  duration: 85,   // frames
+  stagger:  25,   // frames of total spread across dots
+  dir:      'ltr',
+  height:   20,   // px above canvas top
+};
+
+const EASINGS = {
+  easeOutQuart: t => 1 - Math.pow(1 - t, 4),
+  easeOutCubic: t => 1 - Math.pow(1 - t, 3),
+  easeOutExpo:  t => t >= 1 ? 1 : 1 - Math.pow(2, -10 * t),
+  easeInOut:    t => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2,
+  linear:       t => t,
+  bounce: t => {
+    const n = 7.5625, d = 2.75;
+    if (t < 1/d)       return n * t * t;
+    if (t < 2/d)       return n * (t -= 1.5/d)  * t + 0.75;
+    if (t < 2.5/d)     return n * (t -= 2.25/d) * t + 0.9375;
+    return               n * (t -= 2.625/d) * t + 0.984375;
+  },
+};
+
+let CANVAS_SIZE = 400;
+let dots = [];
+let mouse = { x: -9999, y: -9999 };
+let onCanvas = false;
+let svgImg = null;
+let regenTimer = null;
+let falling = false;
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const dotCountEl = document.getElementById('dot-count');
+
+// ─────────────────────────────────────────────────────────────────
+//  IMAGE PROCESSING
+// ─────────────────────────────────────────────────────────────────
+
+// Simple box blur (two-pass separable)
+function boxBlur(data, w, h, radius) {
+  if (radius < 1) return data;
+  const r = Math.round(radius);
+  const tmp = new Float32Array(w * h);
+  const out = new Float32Array(w * h);
+
+  // Horizontal
+  for (let y = 0; y < h; y++) {
+    let sum = 0, count = 0;
+    for (let x = 0; x < w; x++) {
+      sum += data[y * w + x];
+      count++;
+      if (x - r >= 0) { sum -= data[y * w + (x - r)]; count--; }
+      const lo = Math.max(0, x - r + 1);
+      tmp[y * w + x] = sum / (x - lo + 1);
+    }
+  }
+  // Vertical
+  for (let x = 0; x < w; x++) {
+    let sum = 0;
+    for (let y = 0; y < h; y++) {
+      sum += tmp[y * w + x];
+      if (y - r >= 0) sum -= tmp[(y - r) * w + x];
+      const lo = Math.max(0, y - r + 1);
+      out[y * w + x] = sum / (y - lo + 1);
+    }
+  }
+  return out;
+}
+
+function clamp01(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
+
+function applyToneCurve(gray) {
+  const out = new Float32Array(gray.length);
+  for (let i = 0; i < gray.length; i++) {
+    let v = gray[i];
+
+    // Contrast (S-curve style)
+    if (S.contrast !== 0) {
+      const f = (259 * (S.contrast + 255)) / (255 * (259 - S.contrast));
+      v = f * (v - 0.5) + 0.5;
+      v = clamp01(v);
+    }
+
+    // Gamma (midtone adjustment)
+    if (S.gamma !== 1.0 && v > 0) {
+      v = Math.pow(v, 1 / S.gamma);
+    }
+
+    // Highlights compression
+    if (S.highlights > 0 && v > 0.5) {
+      const t = S.highlights / 100;
+      v = 0.5 + (v - 0.5) * (1 - t * 0.6);
+    }
+
+    if (S.invert) v = 1 - v;
+    out[i] = clamp01(v);
+  }
+  return out;
+}
+
+// 4×4 Bayer matrix, normalized 0–1
+const BAYER = [
+  [ 0,  8,  2, 10],
+  [12,  4, 14,  6],
+  [ 3, 11,  1,  9],
+  [15,  7, 13,  5],
+].map(row => row.map(v => v / 16));
+
+function runDither(gray, w, h) {
+  const output = new Uint8Array(w * h);
+  const t = S.threshold / 255;
+
+  if (S.algorithm === 'threshold') {
+    for (let i = 0; i < output.length; i++) {
+      output[i] = gray[i] >= t ? 1 : 0;
+    }
+
+  } else if (S.algorithm === 'ordered') {
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        output[y * w + x] = gray[y * w + x] >= BAYER[y % 4][x % 4] ? 1 : 0;
+      }
+    }
+
+  } else {
+    // Floyd-Steinberg error diffusion
+    const buf = new Float32Array(gray);
+    const es = S.errorStrength;
+
+    for (let y = 0; y < h; y++) {
+      const ltr = !S.serpentine || (y % 2 === 0);
+      const xStart = ltr ? 0 : w - 1;
+      const xEnd   = ltr ? w : -1;
+      const xStep  = ltr ? 1 : -1;
+
+      for (let x = xStart; x !== xEnd; x += xStep) {
+        const i = y * w + x;
+        const old = buf[i];
+        const nv  = old >= t ? 1 : 0;
+        output[i] = nv;
+        const err = (old - nv) * es;
+
+        const xR = x + xStep;  // right (in scan direction)
+        const xL = x - xStep;  // left (behind)
+
+        if (xR >= 0 && xR < w) buf[i + xStep] += err * 7 / 16;
+        if (y + 1 < h) {
+          if (xL >= 0 && xL < w) buf[(y + 1) * w + xL] += err * 3 / 16;
+          buf[(y + 1) * w + x]                          += err * 5 / 16;
+          if (xR >= 0 && xR < w) buf[(y + 1) * w + xR] += err * 1 / 16;
+        }
+      }
+    }
+  }
+  return output;
+}
+
+// Is a point inside a rounded rectangle?
+function inRoundedRect(px, py, w, h, r) {
+  const qx = Math.abs(px - w / 2) - (w / 2 - r);
+  const qy = Math.abs(py - h / 2) - (h / 2 - r);
+  if (qx <= 0 && qy <= 0) return true;          // inside body
+  return qx * qx + qy * qy <= r * r;            // inside corner arc
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  DOT GENERATION
+// ─────────────────────────────────────────────────────────────────
+async function loadSvg() {
+  await fetchSvg();
+  if (svgImg) return svgImg;
+  return new Promise(resolve => {
+    const blob = new Blob([SVG_SRC], { type: 'image/svg+xml' });
+    const url  = URL.createObjectURL(blob);
+    const img  = new Image();
+    img.onload = () => { svgImg = img; URL.revokeObjectURL(url); resolve(img); };
+    img.src = url;
+  });
+}
+
+async function regenerateDots() {
+  const img = await loadSvg();
+
+  // Cell size from scale (1–100%) → 2–22px
+  const cellSize = Math.max(2, Math.round(S.scale / 5));
+  const cols = Math.floor(CANVAS_SIZE / cellSize);
+  const rows = Math.floor(CANVAS_SIZE / cellSize);
+
+  // Render SVG at grid resolution
+  const off = document.createElement('canvas');
+  off.width  = cols;
+  off.height = rows;
+  const offCtx = off.getContext('2d');
+  offCtx.drawImage(img, 0, 0, cols, rows);
+  const imgData = offCtx.getImageData(0, 0, cols, rows).data;
+
+  // Alpha mask — derived from SVG transparent regions
+  const alphaMap = new Uint8Array(cols * rows);
+  for (let i = 0; i < cols * rows; i++) alphaMap[i] = imgData[i * 4 + 3];
+
+  // Grayscale (luminance)
+  let gray = new Float32Array(cols * rows);
+  for (let i = 0; i < cols * rows; i++) {
+    const r = imgData[i * 4]     / 255;
+    const g = imgData[i * 4 + 1] / 255;
+    const b = imgData[i * 4 + 2] / 255;
+    gray[i] = 0.299 * r + 0.587 * g + 0.114 * b;
+  }
+
+  // Tone curve + invert
+  gray = applyToneCurve(gray);
+
+  // Dither
+  const binary = runDither(gray, cols, rows);
+
+  // Offset to center grid on canvas
+  const offX = (CANVAS_SIZE - cols * cellSize) / 2 + cellSize * 0.5;
+  const offY = (CANVAS_SIZE - rows * cellSize) / 2 + cellSize * 0.5;
+
+  // Rounded rect corner radius
+  const cr = (S.cornerRadius / 100) * CANVAS_SIZE;
+
+  const newDots = [];
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      if (!binary[row * cols + col]) continue;
+      if (alphaMap[row * cols + col] < 8) continue;
+      const bx = offX + col * cellSize;
+      const by = offY + row * cellSize;
+      newDots.push({ baseX: bx, baseY: by, x: bx, y: by, vx: 0, vy: 0 });
+    }
+  }
+
+  dots = newDots;
+  dotCountEl.textContent = `${dots.length.toLocaleString()} dots at ${CANVAS_SIZE}×${CANVAS_SIZE}`;
+}
+
+function scheduleRegen(delay = 120) {
+  clearTimeout(regenTimer);
+  regenTimer = setTimeout(regenerateDots, delay);
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  ANIMATION LOOP
+// ─────────────────────────────────────────────────────────────────
+// Shared: compute 0–1 stagger position for a dot based on direction
+function staggerNorm(d) {
+  switch (FALL.dir) {
+    case 'rtl':    return 1 - d.baseX / CANVAS_SIZE;
+    case 'ttb':    return d.baseY / CANVAS_SIZE;
+    case 'btt':    return 1 - d.baseY / CANVAS_SIZE;
+    case 'center': return Math.abs(d.baseX / CANVAS_SIZE - 0.5) * 2;
+    case 'random': return Math.random();
+    default:       return d.baseX / CANVAS_SIZE; // ltr
+  }
+}
+
+function triggerFall() {
+  falling = true;
+  const easeFn   = EASINGS[FALL.curve] || EASINGS.easeOutQuart;
+  const stagger  = FALL.stagger;
+  const duration = FALL.duration;
+  const height   = FALL.height;
+
+  dots.forEach(d => {
+    const norm     = staggerNorm(d);
+    d.fallDelay    = Math.floor(norm * stagger + Math.random() * Math.max(1, stagger * 0.25));
+    d.fallTimer    = 0;
+    d.fallDuration = duration * (0.85 + Math.random() * 0.3);
+    d.fallStartY   = -(height + Math.random() * Math.max(1, height * 0.5));
+    d.fallEase     = easeFn;
+    d.x  = d.baseX;
+    d.y  = d.fallStartY;
+    d.vx = 0;
+    d.vy = 0;
+  });
+}
+
+function triggerPop() {
+  falling = true;
+  const stagger = FALL.stagger;
+
+  dots.forEach(d => {
+    const norm  = staggerNorm(d);
+    d.fallDelay = Math.floor(norm * stagger + Math.random() * Math.max(1, stagger * 0.25));
+    d.visible   = false;
+    d.x  = d.baseX;
+    d.y  = d.baseY;
+    d.vx = 0;
+    d.vy = 0;
+  });
+}
+
+function updateFall() {
+  let anyActive = false;
+  for (const d of dots) {
+    if (d.fallDelay > 0) {
+      d.fallDelay--;
+      anyActive = true;
+      continue;
+    }
+    if (d.fallTimer < d.fallDuration) {
+      d.fallTimer++;
+      const t = d.fallTimer / d.fallDuration;
+      const ease = d.fallEase(Math.min(1, t));
+      d.x = d.baseX;
+      d.y = d.fallStartY + (d.baseY - d.fallStartY) * ease;
+      anyActive = true;
+    } else {
+      d.x = d.baseX;
+      d.y = d.baseY;
+    }
+  }
+  if (!anyActive) {
+    falling = false;
+    for (const d of dots) { d.vx = 0; d.vy = 0; }
+  }
+}
+
+function updatePop() {
+  let anyPending = false;
+  for (const d of dots) {
+    if (!d.visible) {
+      if (d.fallDelay > 0) {
+        d.fallDelay--;
+        anyPending = true;
+      } else {
+        d.visible = true;
+      }
+    }
+  }
+  if (!anyPending) {
+    falling = false;
+    for (const d of dots) { d.visible = true; d.vx = 0; d.vy = 0; }
+  }
+}
+
+function update() {
+  if (falling) {
+    FALL.mode === 'pop' ? updatePop() : updateFall();
+    return;
+  }
+
+  const mx  = mouse.x;
+  const my  = mouse.y;
+  const rr  = S.repulsionRadius;
+  const rs  = S.repulsionStrength;
+  const rr2 = rr * rr;
+
+  for (const d of dots) {
+    if (onCanvas) {
+      const dx    = d.x - mx;
+      const dy    = d.y - my;
+      const dist2 = dx * dx + dy * dy;
+
+      if (dist2 < rr2 && dist2 > 0.01) {
+        const dist  = Math.sqrt(dist2);
+        const t     = 1 - dist / rr;
+        // Cubic falloff — gentle at edges, strong at center
+        const force = t * t * t * rs * rr * 0.18;
+        d.vx += (dx / dist) * force;
+        d.vy += (dy / dist) * force;
+      }
+    }
+
+    // Spring back to resting position
+    d.vx += (d.baseX - d.x) * S.returnSpeed;
+    d.vy += (d.baseY - d.y) * S.returnSpeed;
+
+    // Damping
+    d.vx *= 0.80;
+    d.vy *= 0.80;
+
+    d.x += d.vx;
+    d.y += d.vy;
+  }
+}
+
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function drawWaveGrid() {
+  if (!dots.length) return;
+
+  wgTime += 0.016 * WG.speed;
+
+  const cellSize = Math.max(2, Math.round(S.scale / 5));
+  const dotR     = cellSize * (S.dotSizeScale / 100);
+
+  ctx.fillStyle = S.dotColor;
+
+  for (const d of dots) {
+    // Normalise position to 0–1 within canvas
+    const cx = d.baseX / CANVAS_SIZE;
+    const cy = d.baseY / CANVAS_SIZE;
+
+    const wave    = Math.sin(cx * Math.PI * 2 * WG.frequency + cy * WG.rows * WG.phaseShift + wgTime);
+    const t       = (wave + 1) / 2;
+    const opacity = WG.minOpacity + (WG.maxOpacity - WG.minOpacity) * t;
+
+    ctx.globalAlpha = opacity;
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, dotR, 0, 6.2831853);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function draw() {
+  // Background
+  ctx.fillStyle = S.bgColor;
+  ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+  if (appMode === 'wave') {
+    drawWaveGrid();
+    return;
+  }
+
+  const cellSize = Math.max(2, Math.round(S.scale / 5));
+  const dotR     = cellSize * (S.dotSizeScale / 100);
+
+  ctx.save();
+
+  // Gaussian blur applied to the dots layer
+  if (S.dotBlur > 0) ctx.filter = `blur(${S.dotBlur}px)`;
+
+
+  ctx.fillStyle = S.dotColor;
+
+  if (S.dotShape === 'pill') {
+    // Pills need per-dot transform — draw individually
+    const pw    = dotR * S.pillAspect;
+    const ph    = dotR;
+    const angle = S.pillAngle * Math.PI / 180;
+    for (const d of dots) {
+      if (d.visible === false) continue;
+      ctx.save();
+      ctx.translate(d.x, d.y);
+      ctx.rotate(angle);
+      roundRectPath(ctx, -pw, -ph, pw * 2, ph * 2, ph);
+      ctx.fill();
+      ctx.restore();
+    }
+  } else {
+    // Batched circles — skip invisible dots during pop animation
+    ctx.beginPath();
+    for (const d of dots) {
+      if (d.visible === false) continue;
+      ctx.moveTo(d.x + dotR, d.y);
+      ctx.arc(d.x, d.y, dotR, 0, 6.2831853);
+    }
+    ctx.fill();
+  }
+
+  ctx.restore();
+
+  // Repulsion circle cursor indicator
+  if (onCanvas && S.showCursor) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 4]);
+    ctx.beginPath();
+    ctx.arc(mouse.x, mouse.y, S.repulsionRadius, 0, 6.2831853);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function roundRectPath(ctx, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y,     x + w, y + r,     r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x,     y + h, x,     y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x,     y,     x + r, y,         r);
+  ctx.closePath();
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  CANVAS SIZING
+// ─────────────────────────────────────────────────────────────────
+function resizeCanvas() {
+  const panel = document.getElementById('canvas-panel');
+  const size  = Math.min(panel.clientWidth - 48, panel.clientHeight - 60);
+  CANVAS_SIZE = Math.max(160, Math.floor(size));
+  canvas.width  = CANVAS_SIZE;
+  canvas.height = CANVAS_SIZE;
+  canvas.style.width  = CANVAS_SIZE + 'px';
+  canvas.style.height = CANVAS_SIZE + 'px';
+  scheduleRegen(20);
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  CONTROLS
+// ─────────────────────────────────────────────────────────────────
+function bindSlider(id, key, parseFn, dispId, dispFn, regen = true) {
+  const el   = document.getElementById(id);
+  const disp = dispId ? document.getElementById(dispId) : null;
+  el.addEventListener('input', () => {
+    S[key] = parseFn(el.value);
+    if (disp && dispFn) disp.textContent = dispFn(el.value);
+    if (regen) scheduleRegen();
+  });
+}
+
+function initControls() {
+  // Sliders that affect dot generation
+  bindSlider('ctrl-scale', 'scale',
+    v => parseInt(v), 'disp-scale', v => v + '%');
+
+  // Sliders — render only (no regenerate)
+  bindSlider('ctrl-repulsion-radius',   'repulsionRadius',
+    v => parseInt(v),   'disp-repulsion-radius',   v => v + 'px',   false);
+  bindSlider('ctrl-repulsion-strength', 'repulsionStrength',
+    v => parseFloat(v) / 10, 'disp-repulsion-strength', v => (parseFloat(v)/10).toFixed(1), false);
+  bindSlider('ctrl-return-speed', 'returnSpeed',
+    v => parseFloat(v) / 100, 'disp-return-speed', v => (parseFloat(v)/100).toFixed(2), false);
+
+  // Color pickers
+  document.getElementById('ctrl-dot-color').addEventListener('input', e => {
+    S.dotColor = e.target.value;
+  });
+  document.getElementById('ctrl-bg-color').addEventListener('input', e => {
+    S.bgColor = e.target.value;
+  });
+
+  // Dot render controls (render-only, no regen)
+  bindSlider('ctrl-dot-size',  'dotSizeScale',
+    v => parseInt(v),   'disp-dot-size',  v => v + '%',   false);
+  bindSlider('ctrl-pill-aspect', 'pillAspect',
+    v => parseFloat(v) / 10, 'disp-pill-aspect', v => (parseFloat(v)/10).toFixed(1) + '×', false);
+  bindSlider('ctrl-pill-angle', 'pillAngle',
+    v => parseInt(v),   'disp-pill-angle', v => v + '°',  false);
+
+  document.getElementById('ctrl-dot-shape').addEventListener('change', e => {
+    S.dotShape = e.target.value;
+    document.getElementById('pill-controls').style.display =
+      e.target.value === 'pill' ? 'block' : 'none';
+  });
+
+  // App mode toggle
+  document.getElementById('app-mode-seg').addEventListener('click', e => {
+    const btn = e.target.closest('.seg-btn');
+    if (!btn) return;
+    appMode = btn.dataset.mode;
+    document.querySelectorAll('#app-mode-seg .seg-btn').forEach(b =>
+      b.classList.toggle('seg-active', b === btn));
+    document.getElementById('wave-controls').style.display   = appMode === 'wave'   ? 'block' : 'none';
+    document.getElementById('dither-controls').style.display = appMode === 'dither' ? 'block' : 'none';
+  });
+
+  // Wave grid sliders
+  const wgBind = (id, key, parseFn, dispId, dispFn) => {
+    const el = document.getElementById(id);
+    const disp = document.getElementById(dispId);
+    el.addEventListener('input', () => {
+      WG[key] = parseFn(el.value);
+      if (disp) disp.textContent = dispFn(el.value);
+    });
+  };
+  wgBind('ctrl-wg-rows',  'rows',       v => parseInt(v),          'disp-wg-rows',  v => v);
+  wgBind('ctrl-wg-cols',  'cols',       v => parseInt(v),          'disp-wg-cols',  v => v);
+  wgBind('ctrl-wg-freq',  'frequency',  v => parseFloat(v) / 10,   'disp-wg-freq',  v => (parseFloat(v)/10).toFixed(1));
+  wgBind('ctrl-wg-phase', 'phaseShift', v => parseFloat(v) / 100,  'disp-wg-phase', v => (parseFloat(v)/100).toFixed(2));
+  wgBind('ctrl-wg-minop', 'minOpacity', v => parseFloat(v) / 100,  'disp-wg-minop', v => v + '%');
+  wgBind('ctrl-wg-maxop', 'maxOpacity', v => parseFloat(v) / 100,  'disp-wg-maxop', v => v + '%');
+  wgBind('ctrl-wg-speed', 'speed',      v => parseFloat(v) / 33.3, 'disp-wg-speed', v => (parseFloat(v)/33.3).toFixed(1));
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  MOUSE / TOUCH
+// ─────────────────────────────────────────────────────────────────
+function canvasCoords(clientX, clientY) {
+  const rect  = canvas.getBoundingClientRect();
+  const scale = CANVAS_SIZE / rect.width;
+  return {
+    x: (clientX - rect.left) * scale,
+    y: (clientY - rect.top)  * scale,
+  };
+}
+
+canvas.addEventListener('mousemove', e => {
+  const c = canvasCoords(e.clientX, e.clientY);
+  mouse.x = c.x; mouse.y = c.y;
+});
+canvas.addEventListener('mouseenter', () => { onCanvas = true;  });
+canvas.addEventListener('mouseleave', () => { onCanvas = false; });
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const t = e.touches[0];
+  const c = canvasCoords(t.clientX, t.clientY);
+  mouse.x = c.x; mouse.y = c.y;
+  onCanvas = true;
+}, { passive: false });
+canvas.addEventListener('touchend', () => { onCanvas = false; });
+
+function applyClickDepress(clientX, clientY) {
+  if (falling) return;
+  const c  = canvasCoords(clientX, clientY);
+  const cx = c.x, cy = c.y;
+
+  for (const d of dots) {
+    const dx   = d.x - cx;
+    const dy   = d.y - cy;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
+
+    // Depress all dots inward toward click point uniformly
+    const depressAmt = 18;
+    d.x -= (dx / dist) * depressAmt;
+    d.y -= (dy / dist) * depressAmt;
+
+    // Inward velocity so spring bounces back with overshoot
+    d.vx -= (dx / dist) * 10;
+    d.vy -= (dy / dist) * 10;
+  }
+}
+
+canvas.addEventListener('click', e => applyClickDepress(e.clientX, e.clientY));
+canvas.addEventListener('touchstart', e => {
+  const t = e.touches[0];
+  applyClickDepress(t.clientX, t.clientY);
+}, { passive: true });
+
+// ─────────────────────────────────────────────────────────────────
+//  EXPORT
+// ─────────────────────────────────────────────────────────────────
+
+document.getElementById('btn-export').addEventListener('click', () => {
+  const payload = {
+    canvasSize: CANVAS_SIZE,
+    settings: { ...S },
+    dots: dots.map(d => ({ x: Math.round(d.baseX * 100) / 100, y: Math.round(d.baseY * 100) / 100 })),
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'dither-dots.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('btn-copy').addEventListener('click', () => {
+  const coords = dots.map(d => [Math.round(d.baseX), Math.round(d.baseY)]);
+  const code   = `// ${dots.length} dots — canvas ${CANVAS_SIZE}×${CANVAS_SIZE}\nconst dots = ${JSON.stringify(coords)};`;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn  = document.getElementById('btn-copy');
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = orig, 1500);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────────────────────────
+initControls();
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+loop();
+</script>
+</body>
+</html>
