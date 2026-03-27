@@ -1442,6 +1442,10 @@ function init(container, size) {
   orbitControls.dampingFactor    = 0.06;
   orbitControls.autoRotate       = cfg.autoRotate;
   orbitControls.autoRotateSpeed  = cfg.rotateSpeed;
+  // Disable all mouse/touch interaction — auto-rotate only
+  orbitControls.enableRotate     = false;
+  orbitControls.enableZoom       = false;
+  orbitControls.enablePan        = false;
 
   // Load GLTF
   const loader = new GLTFLoader();
