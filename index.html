@@ -1445,8 +1445,7 @@ function init(container, size) {
 
   keyLight = new THREE.DirectionalLight(new THREE.Color(cfg.keyColor), cfg.keyIntensity);
   keyLight.position.set(5, 8, 7);
-  keyLight.castShadow = true;
-  keyLight.shadow.mapSize.set(2048, 2048);
+  keyLight.castShadow = false; // shadows off — avoids frustum rectangle artifact
   scene.add(keyLight);
 
   fillLight = new THREE.DirectionalLight(0x8899cc, cfg.fillIntensity);
@@ -1481,8 +1480,8 @@ function init(container, size) {
     model.traverse(child => {
       if (child.isMesh) {
         meshes.push(child);
-        child.castShadow    = true;
-        child.receiveShadow = true;
+        child.castShadow    = false;
+        child.receiveShadow = false;
       }
     });
 
