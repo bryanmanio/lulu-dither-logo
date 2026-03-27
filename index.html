@@ -1442,8 +1442,8 @@ function init(container, size) {
   orbitControls.dampingFactor    = 0.06;
   orbitControls.autoRotate       = cfg.autoRotate;
   orbitControls.autoRotateSpeed  = cfg.rotateSpeed;
-  // Disable all mouse/touch interaction — auto-rotate only
-  orbitControls.enableRotate     = false;
+  // Allow drag-to-rotate, but no zoom or pan
+  orbitControls.enableRotate     = true;
   orbitControls.enableZoom       = false;
   orbitControls.enablePan        = false;
 
