@@ -519,6 +519,11 @@ const S = {
 };
 
 let appMode = 'dither'; // 'dither' | 'wave'
+
+// Canvas press spring
+let canvasScale   = 1;
+let canvasScaleV  = 0;
+let canvasScaleTgt = 1;
 let wgTime  = 0;
 
 const WG = {
@@ -909,6 +914,11 @@ function update() {
     d.x += d.vx;
     d.y += d.vy;
   }
+
+  // Canvas scale spring
+  canvasScaleV += (canvasScaleTgt - canvasScale) * 0.18;
+  canvasScaleV *= 0.68;
+  canvasScale  += canvasScaleV;
 }
 
 function hexToRgba(hex, alpha) {
@@ -950,8 +960,16 @@ function draw() {
   ctx.fillStyle = S.bgColor;
   ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
+  // Press spring scale from center
+  ctx.save();
+  const cx = CANVAS_SIZE / 2;
+  ctx.translate(cx, cx);
+  ctx.scale(canvasScale, canvasScale);
+  ctx.translate(-cx, -cx);
+
   if (appMode === 'wave') {
     drawWaveGrid();
+    ctx.restore();
     return;
   }
 
@@ -991,19 +1009,8 @@ function draw() {
     ctx.fill();
   }
 
-  ctx.restore();
-
-  // Repulsion circle cursor indicator
-  if (onCanvas && S.showCursor) {
-    ctx.save();
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([3, 4]);
-    ctx.beginPath();
-    ctx.arc(mouse.x, mouse.y, S.repulsionRadius, 0, 6.2831853);
-    ctx.stroke();
-    ctx.restore();
-  }
+  ctx.restore(); // pill/circle save
+  ctx.restore(); // press-scale save
 }
 
 function roundRectPath(ctx, x, y, w, h, r) {
@@ -1156,18 +1163,25 @@ function applyClickDepress(clientX, clientY) {
     const dy   = d.y - cy;
     const dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
 
-    // Depress all dots inward toward click point uniformly
-    const depressAmt = 18;
-    d.x -= (dx / dist) * depressAmt;
-    d.y -= (dy / dist) * depressAmt;
+    // Gentle outward push — like a ripple from a water drop
+    const pushAmt = 5;
+    d.x += (dx / dist) * pushAmt;
+    d.y += (dy / dist) * pushAmt;
 
-    // Inward velocity so spring bounces back with overshoot
-    d.vx -= (dx / dist) * 10;
-    d.vy -= (dy / dist) * 10;
+    d.vx += (dx / dist) * 1.2;
+    d.vy += (dy / dist) * 1.2;
   }
 }
 
-canvas.addEventListener('click', e => applyClickDepress(e.clientX, e.clientY));
+canvas.addEventListener('mousedown', e => {
+  applyClickDepress(e.clientX, e.clientY);
+  canvasScale   = 0.95;
+  canvasScaleV  = 0;
+  canvasScaleTgt = 0.95;
+});
+window.addEventListener('mouseup', () => {
+  canvasScaleTgt = 1;
+});
 canvas.addEventListener('touchstart', e => {
   const t = e.touches[0];
   applyClickDepress(t.clientX, t.clientY);
